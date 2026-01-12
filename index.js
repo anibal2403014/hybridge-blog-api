@@ -10,6 +10,11 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
+// ✅ Health check (para Render / monitoreo)
+app.get("/salud", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 // Ruta base (prueba Render)
 app.get("/", (req, res) => {
   res.json({ message: "Bienvenido a la API de Hybridge Blog Posts" });
@@ -33,11 +38,12 @@ app.post("/api/login", (req, res) => {
     return res.status(401).json({ error: "Credenciales inválidas" });
   }
 
-  const token = jwt.sign(
-    { email },
-    process.env.JWT_SECRET,
-    { expiresIn: "1h" }
-  );
+  // ✅ evita error si no existe JWT_SECRET en Render
+  if (!process.env.JWT_SECRET) {
+    return res.status(500).json({ error: "JWT_SECRET no configurado" });
+  }
+
+  const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
   res.json({ token });
 });
@@ -59,7 +65,7 @@ app.post("/api/posts", requireAuth, (req, res) => {
     id: posts.length + 1,
     title,
     content,
-    author
+    author,
   };
 
   posts.push(newPost);
